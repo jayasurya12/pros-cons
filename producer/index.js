@@ -1,19 +1,26 @@
-require('dd-trace').init({ service: process.env.DATADOG_SERVICE });
+require('dd-trace').init();
+require('dotenv').config();
 
 const express = require('express');
 const jobQueue = require('./queue');
-require('dotenv').config();
 
 const app = express();
-app.use(express.json());
+const PORT = 3000;
 
-app.post('/produce', async (req, res) => {
-  const { data } = req.body;
-  await jobQueue.add('task', { data });
-  console.log('Job added:', data);
-  res.send('Job added');
+app.get('/', (req, res) => {
+  res.send('✅ Producer Server is running & generating jobs every 5 seconds!');
 });
 
-app.listen(3000, () => {
-  console.log('Producer running on http://localhost:3000');
+app.listen(PORT, () => {
+  console.log(`🚀 Producer server started on http://localhost:${PORT}`);
+
+  // Start auto job generation after server is up
+  setInterval(() => {
+    const jobData = {
+      data: `Auto Job @ ${new Date().toISOString()}`
+    };
+    jobQueue.add('task', jobData)
+      .then(() => console.log('📦 Job added:', jobData.data))
+      .catch(err => console.error('❌ Error adding job:', err.message));
+  }, 5000);
 });
